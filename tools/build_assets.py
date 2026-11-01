@@ -59,6 +59,16 @@ SHEETS = [
     dict(char='parfait', file='13_parfait_walk_run_v2.png', rows=[
         (8, [('walk', 0, 7)]),
         (8, [('run', 0, 7)])]),
+    # parkour additions (white background)
+    dict(char='parfait', file='18_parfait_fall_land_roll.png', chroma='white', rows=[
+        (8, [('fall_loop', 0, 3), ('land_heavy', 4, 7)]),
+        (8, [('roll', 0, 7)])]),
+    dict(char='parfait', file='19_parfait_climb_ledge_walljump.png', chroma='white', rows=[
+        (8, [('climb', 0, 7)]),
+        (8, [('ledge_hang', 0, 3), ('wall_jump', 4, 7)])]),
+    dict(char='parfait', file='20_parfait_air_assassination_counter.png', chroma='white', rows=[
+        (8, [('air_assassination', 0, 7)]),
+        (8, [('counter', 0, 7)])]),
     dict(char='guard', file='08_enemy_bug_guard.webp', rows=[
         (10, [('idle', 0, 2), ('walk_v1', 3, 9)]),
         (9, [('alert', 0, 2), ('run_v1', 3, 8)]),
@@ -125,6 +135,17 @@ def load_rgba(path, chroma):
         a[..., 3] = 255 * (1 - key)
         spill = np.clip(g - np.maximum(r, b), 0, None) * 0.5 * (1 - key)
         a[..., 1] -= spill * 0.8
+    elif chroma == 'white':
+        # plain white background: only the near-white pixels connected to the
+        # border go, so the white t-shirt and sneakers (inside dark outlines) stay
+        m = np.minimum(np.minimum(r, g), b)
+        lab, _ = ndimage.label(m > 232)
+        edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+        bg = np.isin(lab, edge[edge > 0])
+        rim = ndimage.binary_dilation(bg, iterations=2) & ~bg
+        alpha = np.where(bg, 0, 255).astype(np.float32)
+        alpha[rim] = np.clip((250 - m[rim]) / 50, 0, 1) * 255
+        a[..., 3] = alpha
     return np.clip(a, 0, 255).astype(np.uint8)
 
 
@@ -369,7 +390,7 @@ def process_sheet(sheet, debug_dir=None):
 # its head matches the idle animation's.
 HEAD_CALIBRATED = {'parfait'}
 HEAD_REF_ANIM = 'idle'
-HEAD_UNRELIABLE = {'ko', 'death', 'get_up', 'ladder', 'wall_run', 'slide', 'push', 'ledge_climb'}
+HEAD_UNRELIABLE = {'ko', 'death', 'get_up', 'ladder', 'wall_run', 'slide', 'push', 'ledge_climb', 'roll'}
 
 
 def head_size(im):
