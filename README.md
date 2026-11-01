@@ -42,7 +42,7 @@ Chaque niveau cache un coffre au bout du parcours : on l'ouvre, on lève le tré
 | 🎬 **Cinématiques** | Intro et transitions entre les mondes, avec bouton « Passer » |
 | 🎵 **Son** | Une musique par monde, musique de boss, pas synchronisés sur la course, bruitages de combat |
 | 💾 **Sauvegarde** | Progression, étoiles et pièces enregistrées dans le navigateur |
-| 📱 **Mobile & PWA** | Boutons tactiles, plein écran paysage, fonctionne hors ligne |
+| 📱 **Mobile & PWA** | S'installe comme une application, plein écran sur tous les formats d'écran, boutons tactiles, fonctionne hors ligne |
 
 ## Captures
 
@@ -65,7 +65,10 @@ cd codebattle
 node tools/serve.js 8091
 ```
 
-Puis ouvre **http://localhost:8091**.
+Puis ouvre **http://localhost:8091/?debug**.
+
+> En ligne, le jeu ne se lance qu'une fois **installé comme application** (PWA) : depuis un onglet de navigateur, un écran propose d'abord de l'installer (bouton « Installer » sur Chrome et Edge, instructions pour iPhone, Samsung Internet et Firefox).
+> En développement, ajoute `?debug` à l'adresse pour passer cet écran.
 
 > Les modules ES et le service worker ne fonctionnent pas en ouvrant `index.html` directement (`file://`) : passe par un serveur.
 > N'importe quel serveur statique convient (`npx serve`, `python -m http.server`…), mais `tools/serve.js` gère aussi les requêtes HTTP *range* utilisées par les vidéos.
@@ -103,7 +106,8 @@ codebattle/
 │   ├── audio.js          # musique et bruitages (WebAudio)
 │   ├── input.js          # clavier + commandes tactiles
 │   ├── difficulty.js     # préréglages de difficulté
-│   └── save.js           # sauvegarde localStorage
+│   ├── save.js           # sauvegarde localStorage
+│   └── install.js        # écran « installe le jeu pour jouer »
 ├── assets/
 │   ├── sprites/          # planches de sprites sources
 │   ├── build/            # atlas générés (ne pas modifier à la main)

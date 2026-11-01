@@ -4,6 +4,7 @@ import { save } from './save.js';
 import { Game, W, H, setViewWidth } from './game.js';
 import { difficulty } from './difficulty.js';
 import * as audio from './audio.js';
+import * as gate from './install.js';
 
 const $ = (s) => document.querySelector(s);
 const stage = $('#stage');
@@ -197,6 +198,7 @@ function goNext() {
 }
 
 const actions = {
+  install: () => gate.install(),
   play: () => {
     if (!save.data.introSeen) {
       save.data.introSeen = true;
@@ -274,6 +276,10 @@ function frame(now) {
 }
 
 /* ---------------- boot ---------------- */
+// registered first: browsers only offer to install the game once it is active
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 (async () => {
   try {
     await loadAll((p) => {
@@ -289,9 +295,11 @@ function frame(now) {
     touchRoot.classList.add('hidden');
   }
   uiStyle($('#btn-menu'), 'btn_pause');
-  show('screen-title');
+  if (gate.gateActive()) {
+    gate.initGate();
+    show('screen-install');
+  } else show('screen-title');
   requestAnimationFrame(frame);
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 
 // Test hook, only with ?debug in the URL.

@@ -14,5 +14,10 @@ desktop.ini
 .vscode/
 .idea/
 
+modular/
+
 # Private reference (not published)
 assets/sprites/00_parfait_reference_photo.webp
+
+# Third-party asset packs being evaluated (large, not part of the game)
+modular/

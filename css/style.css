@@ -107,11 +107,11 @@ button { font-family: var(--ui-font); cursor: pointer; }
 #loading-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--cyan), var(--gold)); transition: width 0.2s; }
 
 /* ---------- Title ---------- */
-#screen-title {
+#screen-title, #screen-install {
   justify-content: flex-start;
   background: url('../assets/cinematics/title_screen_parfait.png') center / cover no-repeat;
 }
-#screen-title::before {
+#screen-title::before, #screen-install::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -121,6 +121,31 @@ button { font-family: var(--ui-font); cursor: pointer; }
 .title-actions { position: relative; margin-top: auto; margin-bottom: 40px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
 .title-hint { position: relative; margin-bottom: 18px; font-size: 14px; opacity: 0.8; text-shadow: 0 1px 3px #000; }
 @keyframes float { 50% { transform: translateY(-8px); } }
+
+/* ---------- Install gate ---------- */
+#screen-install .title-logo { width: 520px; }
+.install-card {
+  position: relative;
+  margin: auto 24px 34px;
+  max-width: 980px;
+  display: flex;
+  gap: 30px;
+  align-items: center;
+  padding: 24px 34px;
+  background: linear-gradient(180deg, rgba(23, 42, 92, 0.94), rgba(11, 21, 48, 0.96));
+  border: 3px solid var(--gold);
+  border-radius: 22px;
+  box-shadow: 0 0 40px rgba(45, 226, 255, 0.25), inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+.install-icon { flex: none; width: 168px; height: 168px; border-radius: 36px; box-shadow: 0 0 34px rgba(45, 226, 255, 0.5); animation: float 4s ease-in-out infinite; }
+.install-body h2 { margin: 0 0 8px; font-family: var(--title-font); font-size: 36px; color: var(--gold); }
+.install-body p { margin: 0 0 18px; font-size: 19px; line-height: 1.4; }
+.install-help { margin-top: 16px; font-size: 17px; line-height: 1.5; color: #d6ecff; }
+.install-help b { color: var(--gold); }
+.install-help .ico { font-size: 20px; }
+.install-small { font-size: 15px; opacity: 0.75; }
+.install-help.flash { animation: flash-help 0.9s ease-out; }
+@keyframes flash-help { 0%, 40% { color: #fff; text-shadow: 0 0 12px var(--cyan); transform: scale(1.04); } }
 
 /* ---------- Video ---------- */
 #screen-video { background: #000; }

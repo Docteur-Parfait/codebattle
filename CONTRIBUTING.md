@@ -48,7 +48,7 @@ git remote add upstream https://github.com/Docteur-Parfait/codebattle.git
 
 # 2. Lance le jeu
 node tools/serve.js 8091
-# → http://localhost:8091
+# → http://localhost:8091/?debug  (?debug passe l'écran d'installation)
 ```
 
 Le projet n'a **aucune dépendance npm** ni étape de compilation : modifie un fichier, recharge la page.
