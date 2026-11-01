@@ -87,7 +87,12 @@ const ATTACKS = {
   sweep: { fps: 15, hit: [2, 3], dmg: 12, reach: 140, knock: 140, lunge: 100, low: true, key: 'kick' },
   blast: { fps: 13, spawnAt: 5, energy: 30 },
   takedown: { fps: 12, finisher: true },
+  // right after a blocked hit: parry, sidestep, heavy punch (goes through guards)
+  counter: { fps: 16, hit: [5, 6], dmg: 30, reach: 140, knock: 460, lunge: 200, pierce: true },
+  air_assassination: { fps: 12 },
 };
+// sliding into an enemy trips it up
+const SLIDE_HIT = { dmg: 8, knock: 260, launch: 380 };
 
 export class Player extends Actor {
   constructor(x, y) {
@@ -105,7 +110,31 @@ export class Player extends Actor {
     this.sneaking = false;
     this.blocking = false;
     this.lastSafe = { x, y };
+    this.peakY = y;
+    this.rollCool = 0;
+    this.prevIx = 0;
+    this.counterT = 0; // window to counter after a blocked hit
+    this.ledgeCool = 0;
+    this.wallCool = 0;
+    this.wallJumpT = 0;
     this.anim.play('idle', { fps: 7 });
+  }
+
+  /** Back to free movement from any special state. */
+  toNormal() {
+    this.state = 'normal';
+    this.attack = null;
+    this.flying = false;
+    this.h = 160;
+    this.peakY = this.y;
+    this.wasOnGround = this.onGround;
+  }
+
+  // dodges and finishers can't be interrupted
+  get untouchable() {
+    return this.state === 'roll' || this.state === 'knocked' || this.state === 'climbup'
+      || (this.state === 'dash' && this.anim.index < 2)
+      || (this.state === 'attack' && (this.attack === 'counter' || this.attack === 'air_assassination'));
   }
 
   startAttack(name, game) {
@@ -128,16 +157,23 @@ export class Player extends Actor {
   }
 
   hurt(dmg, fromX, game, knock = 280) {
-    if (this.invuln > 0 || this.state === 'dead' || this.state === 'chest') return;
+    if (this.invuln > 0 || this.state === 'dead' || this.state === 'chest' || this.untouchable) return;
     dmg = Math.max(1, Math.round(dmg * game.diff.dmg));
-    if (this.blocking && Math.sign(fromX - this.x) === this.facing) {
+    if (this.blocking && this.state === 'normal' && Math.sign(fromX - this.x) === this.facing) {
       dmg = Math.ceil(dmg * 0.15);
       this.vx = -this.facing * 160;
       game.spark(this.x + this.facing * 40, this.y - 110, 0.7);
       game.sfx('block');
       this.hp -= dmg;
+      this.counterT = 0.6;
+      if (!game.counterHint) {
+        game.counterHint = true;
+        game.toast('Parade ! Frappe (J) tout de suite pour contre-attaquer');
+      }
       return;
     }
+    this.flying = false;
+    this.h = 160;
     this.hp -= dmg;
     this.flash = 0.25;
     this.invuln = 0.9;
@@ -152,6 +188,12 @@ export class Player extends Actor {
       this.state = 'dead';
       this.anim.play('ko', { fps: 9, loop: false });
       game.onPlayerDeath();
+    } else if (knock >= 420) {
+      // thrown to the floor: falls, stays down a moment, gets up
+      this.state = 'knocked';
+      this.downT = 0;
+      this.vy = -380;
+      this.anim.play('ko', { fps: 12, loop: false, restart: true });
     } else {
       this.state = 'hurt';
       this.hurtTime = 0.35;
@@ -167,6 +209,11 @@ export class Player extends Actor {
     this.squash = (this.squash || 0) * Math.exp(-dt * 12);
     this.coyote = this.onGround ? 0.1 : this.coyote - dt;
     this.jumpBuffer = input.pressed('jump') ? 0.12 : this.jumpBuffer - dt;
+    this.rollCool -= dt;
+    this.counterT -= dt;
+    this.ledgeCool -= dt;
+    this.wallCool -= dt;
+    this.wallJumpT -= dt;
     if (input.pressed('stealth')) {
       this.sneaking = !this.sneaking;
       game.toast(this.sneaking ? 'Mode furtif' : 'Mode normal');
@@ -184,10 +231,41 @@ export class Player extends Actor {
       case 'hurt':
         this.hurtTime -= dt;
         this.vx *= Math.exp(-dt * 5);
-        if (this.hurtTime <= 0) this.state = 'normal';
+        if (this.hurtTime <= 0) this.toNormal();
         return;
       case 'attack':
         this.updateAttack(dt, game);
+        return;
+      case 'roll':
+      case 'dash':
+        this.vx *= Math.exp(-dt * (this.state === 'roll' ? 1.2 : 5));
+        if (this.anim.done) { this.toNormal(); this.rollCool = 0.25; }
+        return;
+      case 'land':
+        this.vx *= Math.exp(-dt * 10);
+        if (this.anim.done || (this.anim.index >= 2 && this.jumpBuffer > 0)) this.toNormal();
+        return;
+      case 'slide':
+        this.vx *= Math.exp(-dt * 2.2);
+        if (this.anim.index <= 1) game.meleeHit(this, this.reach(80, 50, 0.2), SLIDE_HIT);
+        if (this.anim.done) this.toNormal();
+        return;
+      case 'charge':
+        this.vx *= Math.exp(-dt * 10);
+        this.energy = Math.min(this.maxEnergy, this.energy + dt * 35);
+        if (!input.down('special') || this.energy >= this.maxEnergy) this.toNormal();
+        return;
+      case 'knocked':
+        this.updateKnocked(dt);
+        return;
+      case 'wall':
+        this.updateWall(dt, game);
+        return;
+      case 'ledge':
+        this.updateLedge(dt, game);
+        return;
+      case 'climbup':
+        this.updateClimbUp(dt);
         return;
       default:
         this.updateNormal(dt, game);
@@ -200,11 +278,25 @@ export class Player extends Actor {
     this.blocking = input.down('block') && this.onGround;
     const speed = this.sneaking ? 170 : 380;
 
+    // ↓ at full run: slide (low, trips enemies up)
+    const slide = crouch && !this.prevCrouch && Math.abs(this.vx) > 300;
+    this.prevCrouch = crouch;
+    if (slide) return this.startSlide(game);
+    // guard while running: forward roll; while guarding, tap away: backstep
+    const away = Math.abs(ix) > 0.6 && Math.sign(ix) === -this.facing;
+    const wasAway = Math.abs(this.prevIx) > 0.6 && Math.sign(this.prevIx) === -this.facing;
+    this.prevIx = ix;
+    if (this.onGround && this.rollCool <= 0) {
+      const dir = Math.sign(ix);
+      if (input.pressed('block') && Math.abs(ix) > 0.3 && Math.abs(this.vx) > 150 && Math.sign(this.vx) === dir) return this.startRoll(dir, game);
+      if (this.blocking && away && !wasAway) return this.startDash(game);
+    }
+
     if (this.blocking || crouch) {
       this.vx *= 0.7;
-    } else {
+    } else if (!(this.wallJumpT > 0 && ix === 0)) { // a wall jump keeps its push-off
       const target = ix * speed;
-      this.vx += (target - this.vx) * Math.min(1, dt * (this.onGround ? 14 : 6));
+      this.vx += (target - this.vx) * Math.min(1, dt * (this.onGround ? 14 : this.wallJumpT > 0 ? 2 : 6));
     }
     if (ix !== 0 && !this.blocking) this.facing = ix > 0 ? 1 : -1;
 
@@ -217,36 +309,64 @@ export class Player extends Actor {
       game.dust(this.x, this.y);
       game.sfx('jump', undefined, { vol: 0.7 });
     }
-    if (!input.down('jump') && this.vy < -400) this.vy += GRAVITY * dt * 1.2; // short hop
+    if (!input.down('jump') && this.vy < -400 && this.wallJumpT <= 0) this.vy += GRAVITY * dt * 1.2; // short hop
+
+    // Parkour: walls too high to jump are climbed; falling past an edge grabs it
+    if (ix !== 0 && this.wallCool <= 0) {
+      const dir = Math.sign(ix);
+      const wall = game.wallAt(this, dir);
+      const run = this.onGround && this.anim.name === 'run';
+      if (wall && (run || (this.onGround ? input.y < -0.5 : this.vy > -300))) return this.grabWall(wall, dir, run, game);
+    }
+    if (!this.onGround && this.vy > 0 && this.ledgeCool <= 0 && input.y < 0.5) {
+      const edge = game.ledgeAt(this);
+      if (edge) return this.grabLedge(edge, game);
+    }
 
     // Actions
     if (input.pressed('interact') && game.tryInteract(this)) return;
     if (input.pressed('punch')) {
+      if (this.counterT > 0 && this.onGround) { this.counterT = 0; this.startAttack('counter', game); return; }
+      if (!this.onGround) {
+        const below = game.airTarget(this);
+        if (below) { this.startAirKill(below, game); return; }
+      }
       const t = game.takedownTarget(this);
       if (t) { this.doTakedown(t, game); return; }
       this.startAttack('jab', game);
       return;
     }
     if (input.pressed('kick')) { this.startAttack(crouch ? 'sweep' : 'kick', game); return; }
-    if (input.pressed('special')) { this.startAttack('blast', game); return; }
+    if (input.pressed('special')) {
+      // out of energy: hold L to focus and charge it back
+      if (this.energy < ATTACKS.blast.energy && this.onGround) return this.startCharge(game);
+      this.startAttack('blast', game);
+      return;
+    }
 
     // Animation
     const a = this.anim;
     const vel = Math.abs(this.vx);
-    if (this.onGround && !this.wasOnGround && this.airTime > 0.25) {
-      this.landTime = 0.12;
-      this.squash = Math.min(0.14, 0.05 + this.airTime * 0.12);
-      game.dust(this.x, this.y);
-      game.sfx('land', undefined, { vol: Math.min(1, 0.4 + this.airTime) });
+    if (this.onGround && !this.wasOnGround) {
+      const drop = this.y - this.peakY;
+      if (drop > 330) return this.heavyLanding(ix, game);
+      if (this.airTime > 0.25) {
+        this.landTime = 0.12;
+        this.squash = Math.min(0.14, 0.05 + this.airTime * 0.12);
+        game.dust(this.x, this.y);
+        game.sfx('land', undefined, { vol: Math.min(1, 0.4 + this.airTime) });
+      }
     }
+    this.peakY = this.onGround ? this.y : Math.min(this.peakY, this.y);
     this.wasOnGround = this.onGround;
     this.airTime = this.onGround ? 0 : (this.airTime || 0) + dt;
     this.landTime = Math.max(0, (this.landTime || 0) - dt);
     if (!this.onGround) {
       // the takeoff pose only once airborne for a moment, so small hops
       // off a ledge don't flash a jump pose
-      if (this.vy < -200) a.play('run_jump', { fps: 9, loop: false });
-      else if (this.airTime > 0.12 || this.vy > 300) a.play('fall', { fps: 6 });
+      if (this.wallJumpT > 0) a.play('wall_jump', { fps: 10, loop: false });
+      else if (this.vy < -200) a.play('run_jump', { fps: 9, loop: false });
+      else if (this.airTime > 0.12 || this.vy > 300) a.play('fall_loop', { fps: 9 });
     } else if (this.landTime > 0 && vel < 120) {
       a.play('land', { fps: 8, loop: false });
     } else if (this.blocking) {
@@ -275,6 +395,7 @@ export class Player extends Actor {
   }
 
   updateAttack(dt, game) {
+    if (this.attack === 'air_assassination') return this.updateAirKill(dt, game);
     const def = ATTACKS[this.attack];
     const i = this.anim.index;
     this.vx *= Math.exp(-dt * (this.onGround ? 9 : 0.3));
@@ -295,10 +416,219 @@ export class Player extends Actor {
     if (this.anim.done) {
       if (this.attack === 'takedown') this.sneaking = true;
       const next = this.queued;
-      this.state = 'normal';
-      this.attack = null;
+      this.toNormal();
       if (next) this.startAttack(next, game);
     }
+  }
+
+  /* ---------- parkour and evasion ---------- */
+
+  startRoll(dir, game) {
+    this.state = 'roll';
+    this.facing = dir;
+    this.vx = dir * Math.max(560, Math.abs(this.vx));
+    this.h = 100;
+    this.anim.play('roll', { fps: 18, loop: false, restart: true });
+    game.sfx('whoosh', undefined, { rate: 0.7 });
+    game.dust(this.x, this.y);
+  }
+
+  startDash(game) {
+    this.state = 'dash';
+    this.vx = -this.facing * 520;
+    this.anim.play('dash_back', { fps: 14, loop: false, restart: true });
+    game.sfx('whoosh', undefined, { rate: 1.3 });
+  }
+
+  startSlide(game) {
+    this.state = 'slide';
+    this.h = 80;
+    this.vx = this.facing * Math.max(560, Math.abs(this.vx) * 1.3);
+    this.hitTargets.clear();
+    this.anim.play('slide', { fps: 9, loop: false, restart: true });
+    game.sfx('whoosh', undefined, { rate: 0.6 });
+    game.dust(this.x, this.y);
+  }
+
+  startCharge(game) {
+    this.state = 'charge';
+    this.anim.play('charge', { fps: 8, loop: false, restart: true });
+    game.sfx('blast', undefined, { vol: 0.35, rate: 0.6 });
+    if (!game.chargeHint) {
+      game.chargeHint = true;
+      game.toast('Plus d\'énergie : maintiens L pour te concentrer et la recharger');
+    }
+  }
+
+  /** Big drop: roll out of it when running, otherwise a heavy crouching landing. */
+  heavyLanding(ix, game) {
+    game.dust(this.x, this.y);
+    game.shake(6);
+    game.sfx('land', undefined, { vol: 1 });
+    if (Math.abs(this.vx) > 220 && Math.sign(ix) === Math.sign(this.vx)) return this.startRoll(Math.sign(this.vx), game);
+    this.state = 'land';
+    this.vx *= 0.2;
+    this.anim.play('land_heavy', { fps: 11, loop: false, restart: true });
+  }
+
+  updateKnocked(dt) {
+    this.vx *= Math.exp(-dt * (this.onGround ? 6 : 1));
+    if (this.anim.name === 'ko' && this.anim.done && this.onGround) {
+      this.downT += dt;
+      if (this.downT > 0.45) this.anim.play('get_up', { fps: 6, loop: false, restart: true });
+    } else if (this.anim.name === 'get_up' && this.anim.done) {
+      this.toNormal();
+      this.invuln = 0.6;
+    }
+  }
+
+  grabWall(wall, dir, run, game) {
+    this.state = 'wall';
+    this.wall = wall;
+    this.facing = dir;
+    this.flying = true;
+    this.vx = 0;
+    // running into it carries Parfait a few steps up the wall
+    this.wallRunT = run ? 0.32 : 0;
+    this.vy = run ? -560 : 0;
+    this.anim.play('climb', { fps: run ? 16 : 9, restart: true });
+    game.sfx('step', undefined, { vol: 0.5 });
+  }
+
+  updateWall(dt, game) {
+    const dir = this.facing;
+    const toward = input.x * dir;
+    this.vx = 0;
+    if (this.jumpBuffer > 0) {
+      // wall jump: kick off backwards
+      this.jumpBuffer = 0;
+      this.toNormal();
+      this.facing = -dir;
+      this.vx = -dir * 470;
+      this.vy = -960;
+      this.wallJumpT = 0.45;
+      this.wallCool = 0.3;
+      this.anim.play('wall_jump', { fps: 10, loop: false, restart: true });
+      game.sfx('jump', undefined, { vol: 0.7 });
+      game.dust(this.x + dir * 20, this.y - 40);
+      return;
+    }
+    if (input.y > 0.5 || toward < -0.5) {
+      this.toNormal();
+      this.vx = -dir * 120;
+      this.wallCool = 0.35;
+      return;
+    }
+    if (this.wallRunT > 0) {
+      this.wallRunT -= dt;
+      if (this.wallRunT <= 0) this.anim.fps = 9;
+    } else {
+      const up = input.y < -0.3 || toward > 0.3;
+      this.vy = up ? -190 : 0;
+      this.anim.fps = up ? 9 : 0;
+    }
+    // hands over the top: pull up onto it
+    if (this.y - 190 <= this.wall.y) this.startClimbUp(this.wall.y, dir > 0 ? this.wall.x : this.wall.x + this.wall.w);
+  }
+
+  grabLedge({ s, edgeX, dir }, game) {
+    this.state = 'ledge';
+    this.flying = true;
+    this.vx = this.vy = 0;
+    this.facing = dir;
+    this.ledge = { y: s.y, edgeX };
+    this.hangT = 0;
+    this.anim.play('ledge_hang', { fps: 3, restart: true });
+    // the hang frames have the fists at the top: hang them on the edge
+    this.x = edgeX - dir * 22;
+    this.y = s.y + (this.anim.frame?.[3] ?? 230) - 14;
+    game.sfx('step', undefined, { vol: 0.6 });
+  }
+
+  updateLedge(dt) {
+    this.hangT += dt;
+    if (this.hangT < 0.25) return;
+    const toward = input.x * this.facing;
+    if (input.y < -0.3 || toward > 0.3 || this.jumpBuffer > 0) {
+      this.jumpBuffer = 0;
+      this.startClimbUp(this.ledge.y, this.ledge.edgeX);
+    } else if (input.y > 0.5 || toward < -0.5) {
+      this.toNormal();
+      this.ledgeCool = 0.4;
+    }
+  }
+
+  startClimbUp(topY, edgeX) {
+    this.state = 'climbup';
+    this.flying = true;
+    this.vx = this.vy = 0;
+    this.climb = { x0: this.x, y0: this.y, x1: edgeX + this.facing * 34, y1: topY, t: 0 };
+    this.anim.play('climb', { fps: 18, restart: true });
+  }
+
+  updateClimbUp(dt) {
+    const c = this.climb;
+    c.t += dt;
+    const k = Math.min(1, c.t / 0.42);
+    const e = k * k * (3 - 2 * k);
+    this.y = c.y0 + (c.y1 - c.y0) * e;
+    // over the edge only once the body is up
+    this.x = c.x0 + (c.x1 - c.x0) * Math.max(0, (e - 0.55) / 0.45);
+    if (k < 1) return;
+    this.onGround = true;
+    this.toNormal();
+    this.state = 'land';
+    this.anim.play('land_heavy', { fps: 12, loop: false, restart: true });
+    this.anim.pos = 1;
+  }
+
+  /** Dive onto an enemy below and finish it with a code-charged punch. */
+  startAirKill(target, game) {
+    this.state = 'attack';
+    this.attack = 'air_assassination';
+    this.airTarget = target;
+    this.struck = false;
+    this.diveT = 0;
+    this.facing = target.x >= this.x ? 1 : -1;
+    const vy0 = 900;
+    const dy = Math.max(10, target.y - this.y);
+    const t = (-vy0 + Math.sqrt(vy0 * vy0 + 2 * GRAVITY * dy)) / GRAVITY;
+    this.vy = vy0;
+    this.vx = Math.max(-1000, Math.min(1000, (target.x - this.facing * 60 - this.x) / Math.max(0.12, t)));
+    this.anim.play('air_assassination', { fps: 12, loop: false, restart: true });
+    game.sfx('whoosh', undefined, { rate: 0.8 });
+  }
+
+  updateAirKill(dt, game) {
+    const a = this.anim;
+    if (!this.struck) {
+      this.diveT += dt;
+      a.fps = a.index >= 2 ? 0 : 12; // hold the dive pose until the ground
+      if (!this.onGround) {
+        if (this.diveT > 1.2) this.toNormal();
+        return;
+      }
+      this.struck = true;
+      this.vx = 0;
+      a.pos = 3;
+      a.fps = 13;
+      const t = this.airTarget;
+      game.shake(12);
+      game.dust(this.x, this.y);
+      game.spark(this.x + this.facing * 50, this.y - 20, 2);
+      game.sfx('stomp', undefined, { vol: 0.9 });
+      game.sfx('takedown');
+      if (t && t.state !== 'dying' && Math.abs(t.x - this.x) < 150 && Math.abs(t.y - this.y) < 60) {
+        if (t.isBoss) t.hurt(45, this.x, game, 0, 0, true);
+        else { t.flash = 0.3; t.takenDown(game); }
+      }
+      for (const e of game.enemies) {
+        if (e !== t && e.state !== 'dying' && !e.flying && Math.abs(e.x - this.x) < 170 && Math.abs(e.y - this.y) < 60) e.hurt(12, this.x, game, 380, 300);
+      }
+      return;
+    }
+    this.vx *= Math.exp(-dt * 10);
+    if (a.done) this.toNormal();
   }
 
   doTakedown(enemy, game) {
@@ -384,9 +714,9 @@ export class Enemy extends Actor {
     return front && Math.abs(dx) < sight;
   }
 
-  hurt(dmg, fromX, game, knock = 200, launch = 0) {
+  hurt(dmg, fromX, game, knock = 200, launch = 0, pierce = false) {
     if (this.dead || this.state === 'dying') return;
-    if (this.type === 'brute' && this.state !== 'attack' && Math.sign(fromX - this.x) === this.facing && Math.random() < 0.35) {
+    if (this.type === 'brute' && !pierce && this.state !== 'attack' && Math.sign(fromX - this.x) === this.facing && Math.random() < 0.35) {
       this.anim.play('block', { fps: 8, loop: false, restart: true });
       this.state = 'blocking';
       this.timer = 0.4;

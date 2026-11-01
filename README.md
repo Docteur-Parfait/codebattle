@@ -34,8 +34,8 @@ Chaque niveau cache un coffre au bout du parcours : on l'ouvre, on lève le tré
 |---|---|
 | 🌍 **5 mondes, 20 niveaux** | Ruines de la Jungle, Temple du Désert, Néo-Ville, Cavernes de Cristal, Coffre-Fort Doré |
 | 🥷 **Infiltration** | Mode furtif, champ de vision des gardes, éliminations silencieuses par derrière |
-| 🥊 **Combat** | Coups de poing et de pied en combo, balayage, garde, Syntax Blast (attaque d'énergie) |
-| 🏃 **Parkour** | Plateformes hautes et basses, ravins, caisses et barils explosifs |
+| 🥊 **Combat** | Coups de poing et de pied en combo, balayage, garde et contre-attaque, assassinat aérien, Syntax Blast (attaque d'énergie) |
+| 🏃 **Parkour** | Murs à escalader, saut mural, accroche aux rebords, roulades et glissades, ravins, caisses et barils explosifs |
 | 👾 **Ennemis** | Bug Guard, Glitch Sniper (arbalète), Sentinel Drone (laser), Firewall Brute, KERNEL |
 | 🔥 **Points de sauvegarde** | Des torches tout au long des niveaux : on y revient après une chute |
 | 🎚️ **3 difficultés** | Facile, Normal, Difficile : vie et dégâts des ennemis, longueur des niveaux |
@@ -83,11 +83,18 @@ Puis ouvre **http://localhost:8091/?debug**.
 | Coup de pied (`↓` + `K` : balayage) | `K` | 🦵 |
 | Syntax Blast | `L` | ⚡ |
 | Garde | `I` ou `Maj` | 🛡️ |
+| Roulade (en courant) | Garde + direction | 🛡️ + joystick |
+| Pas en arrière | Garde tenue, puis direction opposée | 🛡️ + joystick |
+| Glissade (en courant) | `↓` | Joystick vers le bas |
+| Escalader un mur | Courir dessus, `↑` grimper, `Espace` saut mural | Joystick + saut |
+| Contre-attaque | `J` juste après une parade | 👊 |
+| Assassinat aérien | `J` en sautant au-dessus d'un ennemi | 👊 |
+| Recharger l'énergie | Maintenir `L` à court d'énergie | ⚡ |
 | Mode furtif | `C` | 🥷 |
 | Ouvrir le coffre | `E` ou `Entrée` | ✋ |
 | Pause / menu | `Échap` ou `P` | Bouton en haut à droite |
 
-**Astuce :** en mode furtif, approche un garde par derrière et frappe : élimination silencieuse.
+**Astuces :** en mode furtif, approche un garde par derrière et frappe : élimination silencieuse. En tombant près d'une plateforme haute, Parfait s'accroche au rebord : `↑` pour se hisser, `↓` pour lâcher. Une chute de haut finit en réception lourde, ou en roulade si tu cours.
 
 ## Structure du projet
 

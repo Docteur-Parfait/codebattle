@@ -21,6 +21,12 @@ export const TIMING = {
     open_chest: { durs: [1.4, 1, 1, 1.6, 1.6, 2.4] },
     open_great: { durs: [3, 4] },
     raise_treasure: { durs: [2.2, 1] },
+    counter: { durs: [0.8, 0.8, 1.6, 1, 1, 2.2, 1.4, 1.2] },
+    air_assassination: { durs: [1, 1, 1, 1, 2, 2.4, 1.2, 1.2] },
+    land_heavy: { durs: [1.8, 1.2, 1, 1] },
+    ledge_hang: { pingpong: true, blend: true },
+    charge: { durs: [1, 1, 1, 1, 1.4, 1.4] },
+    get_up: { durs: [1.6, 1, 1] },
   },
   guard: {
     idle: { pingpong: true, blend: true, breathe: 0.008 },

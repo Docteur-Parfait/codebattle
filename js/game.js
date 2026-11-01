@@ -52,6 +52,7 @@ export class Game {
     this.solids = [
       ...L.ground.map((g) => ({ x: g.x, y: GROUND_Y, w: g.w, h: 400, kind: 'ground' })),
       ...L.platforms.map((p) => ({ x: p.x, y: p.y, w: p.w, h: 34, kind: 'plat', oneWay: true })),
+      ...(L.walls || []).map((w) => ({ x: w.x, y: GROUND_Y - w.h, w: w.w, h: w.h, kind: 'wall' })),
     ];
   }
 
@@ -81,12 +82,48 @@ export class Game {
       && Math.sign(p.x - e.x) === -e.facing) || null;
   }
 
+  /** Enemy on the ground below an airborne Parfait, for an air assassination. */
+  airTarget(p) {
+    let best = null;
+    let bd = Infinity;
+    for (const e of this.enemies) {
+      if (e.state === 'dying' || e.flying) continue;
+      const dx = e.x - p.x;
+      const dy = e.y - p.y;
+      if (dy < 90 || dy > 600 || Math.abs(dx) > 120 + dy * 0.6) continue;
+      const d = Math.hypot(dx, dy);
+      if (d < bd) { bd = d; best = e; }
+    }
+    return best;
+  }
+
+  /** Wall Parfait is pressed against on side `dir`, if it is too tall to step onto. */
+  wallAt(p, dir) {
+    const front = p.x + dir * p.w / 2;
+    return this.solids.find((s) => !s.oneWay && s.y < p.y - 60 && p.y - p.h < s.y + s.h
+      && Math.abs((dir > 0 ? s.x : s.x + s.w) - front) < 3) || null;
+  }
+
+  /** Edge whose top is at Parfait's raised hands as he falls past it. */
+  ledgeAt(p) {
+    const hand = p.y - p.h - 40;
+    const dir = p.facing;
+    for (const s of this.solids) {
+      if (s.y < hand - 30 || s.y > hand + 30) continue;
+      if (s.y + 230 > GROUND_Y) continue; // too low: the body would hang through the ground
+      const edgeX = dir > 0 ? s.x : s.x + s.w;
+      const gap = (p.x + dir * p.w / 2 - edgeX) * dir;
+      if (gap > -26 && gap < 14) return { s, edgeX, dir };
+    }
+    return null;
+  }
+
   meleeHit(p, box, def) {
     for (const e of this.enemies) {
       if (e.state === 'dying' || p.hitTargets.has(e)) continue;
       if (overlap(box, e.body)) {
         p.hitTargets.add(e);
-        e.hurt(def.dmg, p.x, this, def.knock, def.launch);
+        e.hurt(def.dmg, p.x, this, def.knock, def.launch, def.pierce);
         p.energy = Math.min(p.maxEnergy, p.energy + 4);
         this.shake(def.dmg > 15 ? 6 : 3);
         this.hitstop = 0.05;
@@ -178,10 +215,12 @@ export class Game {
     p.y = GROUND_Y;
     p.vx = p.vy = 0;
     p.hp = p.maxHp;
-    p.state = 'normal';
+    p.toNormal();
     p.invuln = 2;
     p.lastSafe = { x: p.x, y: p.y };
-    p.anim.play('idle', { restart: true });
+    // back on his feet at the torch
+    p.state = 'knocked';
+    p.anim.play('get_up', { fps: 6, loop: false, restart: true });
     for (const e of this.enemies) if (Math.abs(e.x - p.x) < 700) e.aware = false;
     this.puff(p.x, p.y - 80);
     this.sfx('heart');
@@ -263,7 +302,12 @@ export class Game {
     this.time += dt;
     const p = this.player;
     p.update(dt, this);
-    this.moveActor(p, dt);
+    // hanging from an edge or pulling up: Parfait is placed by his own update
+    if (p.state !== 'ledge' && p.state !== 'climbup') this.moveActor(p, dt);
+    if (!this.wallHint && this.solids.some((s) => s.kind === 'wall' && s.x > p.x && s.x - p.x < 520)) {
+      this.wallHint = true;
+      this.toast('Un mur : cours dessus pour l\'escalader (↑ grimper · Espace saut mural)');
+    }
     if (p.onGround && p.state === 'normal') p.lastSafe = { x: p.x, y: p.y };
     for (const c of this.checkpoints) {
       if (c.lit || p.x < c.x || p.state === 'dead') continue;
@@ -282,6 +326,7 @@ export class Game {
       else {
         const back = p.lastSafe.x - p.facing * 120;
         p.x = back; p.y = GROUND_Y - 300; p.vx = 0; p.vy = 0; p.invuln = 1.2;
+        p.toNormal();
         this.sfx('hurt');
         this.toast('-25 PV');
       }
@@ -497,6 +542,11 @@ export class Game {
         this.drawTileRun(ctx, s.x, s.y - 26, s.w, 150, 'ground');
         ctx.fillStyle = 'rgba(10,6,4,0.85)';
         ctx.fillRect(s.x + 10, s.y + 115, s.w - 20, H);
+      } else if (s.kind === 'wall') {
+        // a raised block of the same ground: top surface over a dark cliff face
+        ctx.fillStyle = 'rgba(10,6,4,0.92)';
+        ctx.fillRect(s.x + 8, s.y + 100, s.w - 16, s.h - 90);
+        this.drawTileRun(ctx, s.x, s.y - 26, s.w, 150, 'ground');
       } else {
         this.drawTileRun(ctx, s.x, s.y - 22, s.w, 92, 'plat');
       }

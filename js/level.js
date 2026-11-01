@@ -19,13 +19,16 @@ const ENEMIES_BY_WORLD = {
 };
 
 /**
- * Returns { length, ground[], platforms[], crates[], hazards[], enemies[],
+ * Returns { length, ground[], platforms[], walls[], crates[], hazards[], enemies[],
  * pickups[], decor[], chest, boss, spawn }.
  */
 export function buildLevel(def, diff) {
   const id = def.id;
   const world = def.world;
   const r = rng(id * 7919);
+  // walls draw from their own stream, so adding them left the rest of each
+  // level as it was
+  const rw = rng(id * 104729 + 13);
   const boss = def.boss || null;
   // ~2.5 min for level 1 up to ~6 min for the last ones, at normal difficulty
   const length = Math.round((14000 + id * 900) * diff.length) + (boss ? 1300 : 0);
@@ -37,6 +40,7 @@ export function buildLevel(def, diff) {
   const pickups = [];
   const decor = [];
   const checkpoints = [];
+  const walls = [];
   let lastCheckpoint = 0;
 
   const coinRow = (x, y, n, gap = 56) => {
@@ -58,7 +62,9 @@ export function buildLevel(def, diff) {
       lastCheckpoint = x;
     }
     const roll = r();
+    let kind = 'enemy';
     if (roll < 0.18 && id > 1) {
+      kind = 'pit';
       // Gap (pit) the player must jump over.
       const gap = 130 + Math.floor(r() * (60 + world * 15) * diff.hazards);
       ground.push({ x: groundStart, w: x - groundStart });
@@ -68,6 +74,7 @@ export function buildLevel(def, diff) {
       x += 260;
     } else if (roll < 0.38) {
       // Floating platforms with coins / pickups.
+      kind = 'plat';
       const n = 2 + Math.floor(r() * 3);
       const high = r() < 0.5;
       const y = GROUND_Y - (high ? 280 : 160);
@@ -88,6 +95,7 @@ export function buildLevel(def, diff) {
       x += w + 220;
     } else if (roll < 0.52) {
       // Crates (breakable, may hide coins) and the odd explosive barrel.
+      kind = 'crates';
       const n = 1 + Math.floor(r() * 3);
       for (let i = 0; i < n; i++) {
         const kind = r() < 0.5 ? 'crate' : 'cardboard';
@@ -97,6 +105,7 @@ export function buildLevel(def, diff) {
       x += n * 78 + 260;
     } else if (roll < 0.52 + 0.12 * diff.hazards && id > 2) {
       const w = r() < diff.hazards - 0.6 ? 240 : 150;
+      kind = 'spikes';
       hazards.push({ type: 'spikes', x, y: GROUND_Y - 34, w, h: 34 });
       coinRow(x - 10, GROUND_Y - 170, 3);
       x += 420;
@@ -119,6 +128,14 @@ export function buildLevel(def, diff) {
     }
     if (r() < 0.5) decor.push({ item: `deco_${Math.floor(r() * 8)}`, x: x - 120 - r() * 200, tile: true });
     if (r() < 0.15) decor.push({ item: r() < 0.5 ? 'rock_small' : 'rock_medium', x: x - 200 });
+    // A wall too high to jump: Parfait runs up it and climbs over (never right
+    // after guards, who would walk into it)
+    if (kind !== 'enemy' && x < safeEnd - 700 && rw() < 0.2) {
+      const h = 300 + Math.floor(rw() * 3) * 30;
+      walls.push({ x, w: 170, h });
+      coinRow(x + 30, GROUND_Y - h - 60, 3);
+      x += 170 + 320;
+    }
   }
 
   ground.push({ x: groundStart, w: length - groundStart + 400 });
@@ -138,6 +155,7 @@ export function buildLevel(def, diff) {
     length,
     ground,
     platforms,
+    walls,
     checkpoints,
     crates,
     hazards,
