@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Local tooling
+.claude/
+node_modules/
+*.log
+
+# OS / editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Private reference (not published)
+assets/sprites/00_parfait_reference_photo.webp

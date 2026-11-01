@@ -1,0 +1,32 @@
+{
+  "worlds": [
+    { "id": 1, "name": "Ruines de la Jungle", "background": "environment/w1_jungle_bg.png" },
+    { "id": 2, "name": "Temple du Désert", "background": "environment/w2_desert_bg.png" },
+    { "id": 3, "name": "Néo-Ville", "background": "environment/w3_neocity_bg.png" },
+    { "id": 4, "name": "Cavernes de Cristal", "background": "environment/w4_caverns_bg.png" },
+    { "id": 5, "name": "Le Coffre-Fort Doré", "background": "environment/w5_vault_bg.png" }
+  ],
+  "levels": [
+    { "id": 1, "world": 1, "name": "Le Village", "thumb": "levels/level_01.jpg" },
+    { "id": 2, "world": 1, "name": "Les Ruines Moussues", "thumb": "levels/level_02.jpg" },
+    { "id": 3, "world": 1, "name": "La Rivière aux Chutes", "thumb": "levels/level_03.jpg" },
+    { "id": 4, "world": 1, "name": "Le Temple du Gardien", "thumb": "levels/level_04.jpg", "boss": "firewall_brute", "cinematicAfter": "cinematics/02_jungle_to_desert.mp4" },
+    { "id": 5, "world": 2, "name": "Les Dunes Brûlantes", "thumb": "levels/level_05.jpg" },
+    { "id": 6, "world": 2, "name": "Le Bazar Oublié", "thumb": "levels/level_06.jpg" },
+    { "id": 7, "world": 2, "name": "La Tempête de Sable", "thumb": "levels/level_07.jpg" },
+    { "id": 8, "world": 2, "name": "Le Sphinx de Code", "thumb": "levels/level_08.jpg", "boss": "firewall_brute", "cinematicAfter": "cinematics/03_desert_to_city.mp4" },
+    { "id": 9, "world": 3, "name": "Les Toits Néon", "thumb": "levels/level_09.jpg" },
+    { "id": 10, "world": 3, "name": "Le Marché Nocturne", "thumb": "levels/level_10.jpg" },
+    { "id": 11, "world": 3, "name": "La Tour des Drones", "thumb": "levels/level_11.jpg" },
+    { "id": 12, "world": 3, "name": "Le Serveur Central", "thumb": "levels/level_12.jpg", "boss": "firewall_brute", "cinematicAfter": "cinematics/04_city_to_caverns.mp4" },
+    { "id": 13, "world": 4, "name": "La Mine Abandonnée", "thumb": "levels/level_13.jpg" },
+    { "id": 14, "world": 4, "name": "Le Lac Lumineux", "thumb": "levels/level_14.jpg" },
+    { "id": 15, "world": 4, "name": "Les Ponts de Cristal", "thumb": "levels/level_15.jpg" },
+    { "id": 16, "world": 4, "name": "Le Cœur de la Montagne", "thumb": "levels/level_16.jpg", "boss": "firewall_brute", "cinematicAfter": "cinematics/05_vault_kernel.mp4" },
+    { "id": 17, "world": 5, "name": "Les Portes d'Or", "thumb": "levels/level_17.jpg" },
+    { "id": 18, "world": 5, "name": "La Salle des Statues", "thumb": "levels/level_18.jpg" },
+    { "id": 19, "world": 5, "name": "Le Labyrinthe des Runes", "thumb": "levels/level_19.jpg" },
+    { "id": 20, "world": 5, "name": "Le Grand Trésor", "thumb": "levels/level_20.jpg", "boss": "kernel", "cinematicAfter": "cinematics/06_ending_treasure.mp4" }
+  ],
+  "introCinematic": "cinematics/01_intro_village.mp4"
+}

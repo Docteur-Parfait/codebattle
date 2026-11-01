@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0b1530">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>CodeBattle</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/build/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="stage">
+    <canvas id="game" width="1280" height="720"></canvas>
+
+    <!-- Loading -->
+    <section id="screen-loading" class="screen active">
+      <div class="loading-box">
+        <div class="loading-title">CodeBattle</div>
+        <div class="loading-bar"><div id="loading-fill"></div></div>
+        <div id="loading-text">Chargement…</div>
+      </div>
+    </section>
+
+    <!-- Title -->
+    <section id="screen-title" class="screen">
+      <img class="title-logo" src="assets/environment/logo.png" alt="CodeBattle">
+      <div class="title-actions">
+        <div class="diff-select" role="radiogroup" aria-label="Difficulté">
+          <button class="diff-btn" data-diff="facile">Facile</button>
+          <button class="diff-btn" data-diff="normal">Normal</button>
+          <button class="diff-btn" data-diff="difficile">Difficile</button>
+        </div>
+        <button class="btn-gold big" data-action="play">JOUER</button>
+        <button class="btn-ghost" data-action="intro">Revoir l'intro</button>
+      </div>
+      <div class="title-hint">Clavier : ← → / A D bouger · Espace sauter · J poing · K pied · L pouvoir · I garde · C furtif · E interagir</div>
+    </section>
+
+    <!-- Cinematic -->
+    <section id="screen-video" class="screen">
+      <video id="cinematic" playsinline preload="auto"></video>
+      <button id="btn-skip" class="btn-ghost skip">Passer ▶▶</button>
+      <button id="btn-video-play" class="btn-gold big video-play hidden">JOUER</button>
+    </section>
+
+    <!-- Level map -->
+    <section id="screen-map" class="screen">
+      <header class="map-header">
+        <button class="btn-ghost" data-action="title">◀ Menu</button>
+        <h1 id="map-world-name">Monde</h1>
+        <div class="map-wallet"><span class="coin-icon"></span><span id="map-coins">0</span></div>
+      </header>
+      <div id="world-tabs" class="world-tabs"></div>
+      <div id="level-grid" class="level-grid"></div>
+    </section>
+
+    <!-- Pause -->
+    <section id="screen-pause" class="screen modal">
+      <div class="panel">
+        <h2>Pause</h2>
+        <button class="btn-gold" data-action="resume">Reprendre</button>
+        <button class="btn-ghost" data-action="restart">Recommencer</button>
+        <button class="btn-ghost" data-action="map">Carte des niveaux</button>
+        <div class="sound-row">
+          <button id="btn-music" class="btn-ghost small" data-action="toggleMusic">Musique : ON</button>
+          <button id="btn-sfx" class="btn-ghost small" data-action="toggleSfx">Bruitages : ON</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Level complete / game over -->
+    <section id="screen-result" class="screen modal">
+      <div class="panel">
+        <h2 id="result-title">Niveau terminé !</h2>
+        <div id="result-stars" class="stars"></div>
+        <p id="result-detail"></p>
+        <button id="result-next" class="btn-gold" data-action="next">Niveau suivant</button>
+        <button class="btn-ghost" data-action="restart">Rejouer</button>
+        <button class="btn-ghost" data-action="map">Carte des niveaux</button>
+      </div>
+    </section>
+
+    <!-- Rotate device hint -->
+    <div id="rotate-hint">Tourne ton téléphone en mode paysage 📱↻</div>
+
+    <!-- Touch controls -->
+    <div id="touch" class="hidden">
+      <div id="joystick"><div id="joystick-knob"></div></div>
+      <div class="touch-buttons">
+        <button class="tbtn" data-key="special" data-ui="btn_special"></button>
+        <button class="tbtn" data-key="punch" data-ui="btn_punch"></button>
+        <button class="tbtn" data-key="kick" data-ui="btn_kick"></button>
+        <button class="tbtn big" data-key="jump" data-ui="btn_jump"></button>
+        <button class="tbtn small" data-key="block" data-ui="btn_block"></button>
+        <button class="tbtn small" data-key="stealth" data-ui="btn_stealth"></button>
+        <button class="tbtn small" data-key="interact" data-ui="btn_interact"></button>
+      </div>
+    </div>
+
+    <!-- In-game menu button (PC and touch) -->
+    <button id="btn-menu" class="hud-menu hidden" data-action="pause" data-ui="btn_pause" aria-label="Menu pause"></button>
+  </div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

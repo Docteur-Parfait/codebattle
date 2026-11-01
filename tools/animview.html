@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- Dev tool: plays character animations at game speed through the game's own
+     Animator. Open http://localhost:8091/tools/animview.html?char=parfait&anims=idle,walk,run&fps=10 -->
+<html>
+<head>
+<meta charset="utf-8">
+<base href="../">
+<title>Anim viewer</title>
+<style>body{margin:0;background:#262a3a;color:#ff0;font:14px monospace}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script type="module">
+import { loadAll, assets } from './js/assets.js';
+import { Animator } from './js/sprite.js';
+
+const q = new URLSearchParams(location.search);
+const char = q.get('char') || 'parfait';
+const fps = +(q.get('fps') || 10);
+const scale = +(q.get('scale') || 1);
+const slow = +(q.get('slow') || 1);
+await loadAll();
+const names = q.get('anims')?.split(',') || Object.keys(assets.atlas[char].anims);
+const cell = 300 * scale;
+const cols = Math.min(names.length, 5);
+const cv = document.getElementById('c');
+cv.width = cols * cell;
+cv.height = Math.ceil(names.length / cols) * (cell + 20);
+const ctx = cv.getContext('2d');
+const anims = names.map((n) => {
+  const a = new Animator(char);
+  a.play(n, { fps, loop: true });
+  return a;
+});
+// time can be driven by hand (window.__t) so screenshots land on exact moments
+window.__anims = anims;
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000) / slow;
+  last = now;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  anims.forEach((a, i) => {
+    if (!window.__paused) a.update(dt);
+    const x = (i % cols) * cell + cell / 2;
+    const y = Math.floor(i / cols) * (cell + 20) + cell;
+    ctx.strokeStyle = '#f55';
+    ctx.beginPath(); ctx.moveTo(x - cell / 2 + 10, y + 0.5); ctx.lineTo(x + cell / 2 - 10, y + 0.5); ctx.stroke();
+    ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale); a.draw(ctx, 0, 0, 1); ctx.restore();
+    ctx.fillStyle = '#ff0';
+    ctx.fillText(`${names[i]} ${a.index}`, x - cell / 2 + 10, y - cell + 16);
+  });
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

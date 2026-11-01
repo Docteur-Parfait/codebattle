@@ -1,0 +1,13 @@
+{
+  "name": "CodeBattle",
+  "short_name": "CodeBattle",
+  "description": "Parfait part à la recherche du Grand Trésor.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b1530",
+  "theme_color": "#0b1530",
+  "icons": [
+    { "src": "assets/build/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
