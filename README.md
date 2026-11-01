@@ -13,7 +13,9 @@ Jouable dans le navigateur, installable en PWA, pensé pour Android en paysage.
 ![Zero dependency](https://img.shields.io/badge/d%C3%A9pendances-0-2de2ff)
 ![License](https://img.shields.io/badge/code-MIT-f5c542)
 
-<img src="assets/cinematics/title_screen_parfait.png" alt="Écran titre de CodeBattle" width="760">
+### [▶ Jouer maintenant](https://codebattle-omega.vercel.app)
+
+<img src="assets/screenshots/caverns.jpg" alt="Parfait affronte des gardes dans les Cavernes de Cristal" width="820">
 
 </div>
 
@@ -42,9 +44,16 @@ Chaque niveau cache un coffre au bout du parcours : on l'ouvre, on lève le tré
 | 💾 **Sauvegarde** | Progression, étoiles et pièces enregistrées dans le navigateur |
 | 📱 **Mobile & PWA** | Boutons tactiles, plein écran paysage, fonctionne hors ligne |
 
-<div align="center">
-<img src="assets/levels/level_01.jpg" width="190"> <img src="assets/levels/level_06.jpg" width="190"> <img src="assets/levels/level_11.jpg" width="190"> <img src="assets/levels/level_16.jpg" width="190">
-</div>
+## Captures
+
+| | |
+|---|---|
+| ![Ruines de la Jungle](assets/screenshots/jungle.jpg) | ![Temple du Désert](assets/screenshots/desert.jpg) |
+| **Ruines de la Jungle** : un coup de pied bien placé | **Temple du Désert** : le Syntax Blast contre deux gardes |
+| ![Néo-Ville](assets/screenshots/neocity.jpg) | ![Coffre-Fort Doré](assets/screenshots/vault.jpg) |
+| **Néo-Ville** : drone sentinelle et pièges sur les toits | **Coffre-Fort Doré** : face au Glitch Sniper |
+| ![Combat contre KERNEL](assets/screenshots/boss.jpg) | ![Carte des niveaux](assets/screenshots/map.jpg) |
+| **Le Grand Trésor** : le combat final contre KERNEL | **La carte** : 5 mondes, 4 niveaux chacun |
 
 ## Jouer en local
 
@@ -101,6 +110,8 @@ codebattle/
 │   ├── environment/      # décors, tuiles, objets, effets, interface
 │   ├── levels/           # levels.json + miniatures des niveaux
 │   ├── cinematics/       # vidéos et images clés
+│   ├── screenshots/      # captures du README et image de partage
+│   ├── icons/            # icônes de l'application (PWA, favicon)
 │   └── audio/            # musiques et bruitages
 ├── tools/
 │   ├── serve.js          # serveur de développement

@@ -4,8 +4,11 @@ import { input } from './input.js';
 import { buildLevel, GROUND_Y } from './level.js';
 import { Player, Enemy, GRAVITY, overlap } from './entities.js';
 
-export const W = 1280;
+// The height is fixed; the width follows the screen shape (see main.js fit())
+// so wide phones show more of the level instead of black bars.
+export let W = 1280;
 export const H = 720;
+export function setViewWidth(w) { W = w; }
 
 const COIN_FRAMES = ['coin_0', 'coin_1', 'coin_2', 'coin_3', 'coin_4', 'coin_5'];
 const PICKUP_ITEM = { gem: 'gem_blue', heart: 'heart', fragment: 'code_fragment' };
@@ -21,7 +24,7 @@ export class Game {
     this.tiles = `tiles_w${def.world}`;
     this.reset();
     // build the scaled parallax strips now rather than on the first frame
-    this.layerStrip(`bg_${this.world}`, Math.round(H * 1.25));
+    this.layerStrip(`bg_${this.world}`, this.skyHeight());
     this.layerStrip(`mid_${this.world}`, 720);
   }
 
@@ -405,7 +408,8 @@ export class Game {
    */
   layerStrip(key, h) {
     this.strips = this.strips || {};
-    if (this.strips[key]) return this.strips[key];
+    const id = `${key}@${h}`;
+    if (this.strips[id]) return this.strips[id];
     const img = assets.img[key];
     if (!img) return null;
     const w = Math.round(img.width * (h / img.height));
@@ -418,7 +422,7 @@ export class Game {
     g.translate(w * 2, 0);
     g.scale(-1, 1);
     g.drawImage(img, 0, 0, w, h);
-    this.strips[key] = c;
+    this.strips[id] = c;
     return c;
   }
 
@@ -435,11 +439,18 @@ export class Game {
    * across its own overflow over the whole level: no repeat, so the moon or
    * the sun never appears twice.
    */
+  // tall enough that the sky stays wider than the view on wide screens
+  skyHeight() {
+    const img = assets.img[`bg_${this.world}`];
+    if (!img) return Math.round(H * 1.25);
+    return Math.max(Math.round(H * 1.25), Math.ceil((W + 80) * img.height / img.width));
+  }
+
   drawSky(ctx, cam) {
     const key = `bg_${this.world}`;
     const img = assets.img[key];
     if (!img) return;
-    const h = Math.round(H * 1.25);
+    const h = this.skyHeight();
     const strip = this.layerStrip(key, h);
     const w = strip.width / 2;
     const k = Math.max(0, Math.min(1, cam / Math.max(1, this.level.length - W)));

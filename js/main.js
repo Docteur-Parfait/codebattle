@@ -1,7 +1,7 @@
 import { assets, loadAll, envRect } from './assets.js';
 import { input } from './input.js';
 import { save } from './save.js';
-import { Game, W, H } from './game.js';
+import { Game, W, H, setViewWidth } from './game.js';
 import { difficulty } from './difficulty.js';
 import * as audio from './audio.js';
 
@@ -19,6 +19,14 @@ let mapWorld = 1;
 
 /* ---------------- layout ---------------- */
 function fit() {
+  // keep 720 px of height and widen the view to the screen's shape (16:9 up
+  // to ~21:9), so Android phones are filled edge to edge
+  const w = Math.round(Math.min(1720, Math.max(1280, H * innerWidth / innerHeight)));
+  if (w !== W) {
+    setViewWidth(w);
+    canvas.width = w;
+    stage.style.width = `${w}px`;
+  }
   const s = Math.min(innerWidth / W, innerHeight / H);
   stage.style.transform = `translate(${-W / 2 * s}px, ${-H / 2 * s}px) scale(${s})`;
 }

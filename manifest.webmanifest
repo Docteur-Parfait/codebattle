@@ -1,13 +1,24 @@
 {
-  "name": "CodeBattle",
+  "id": "/",
+  "name": "CodeBattle — la quête du Grand Trésor",
   "short_name": "CodeBattle",
-  "description": "Parfait part à la recherche du Grand Trésor.",
+  "description": "Parfait part à la recherche du Grand Trésor : parkour, infiltration et combat en 5 mondes et 20 niveaux.",
+  "lang": "fr",
   "start_url": "./index.html",
   "display": "fullscreen",
   "orientation": "landscape",
   "background_color": "#0b1530",
   "theme_color": "#0b1530",
+  "categories": ["games", "entertainment"],
   "icons": [
-    { "src": "assets/build/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "assets/screenshots/caverns.jpg", "sizes": "1280x720", "type": "image/jpeg", "form_factor": "wide", "label": "Combat dans les Cavernes de Cristal" },
+    { "src": "assets/screenshots/jungle.jpg", "sizes": "1280x720", "type": "image/jpeg", "form_factor": "wide", "label": "Les Ruines de la Jungle" },
+    { "src": "assets/screenshots/neocity.jpg", "sizes": "1280x720", "type": "image/jpeg", "form_factor": "wide", "label": "Les toits de Néo-Ville" },
+    { "src": "assets/screenshots/boss.jpg", "sizes": "1280x720", "type": "image/jpeg", "form_factor": "wide", "label": "Face à KERNEL, gardien du Grand Trésor" }
   ]
 }
