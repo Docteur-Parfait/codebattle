@@ -296,6 +296,10 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   }
   uiStyle($('#btn-menu'), 'btn_pause');
   if (gate.gateActive()) {
+    // the install screen leaves the 16:9 stage and becomes a normal responsive
+    // page, so phones get it in portrait too (no "rotate your phone" first)
+    document.body.classList.add('gate');
+    document.body.appendChild($('#screen-install'));
     gate.initGate();
     show('screen-install');
   } else show('screen-title');

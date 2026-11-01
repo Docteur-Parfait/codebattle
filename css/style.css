@@ -147,6 +147,36 @@ button { font-family: var(--ui-font); cursor: pointer; }
 .install-help.flash { animation: flash-help 0.9s ease-out; }
 @keyframes flash-help { 0%, 40% { color: #fff; text-shadow: 0 0 12px var(--cyan); transform: scale(1.04); } }
 
+/* In a browser tab the install screen is a normal responsive page, shown in
+   any orientation (the game itself still asks for landscape). */
+body.gate #stage, body.gate #rotate-hint { display: none !important; }
+body.gate #screen-install {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  justify-content: center;
+  gap: 2.5vh;
+  padding: 3vh 16px;
+}
+body.gate #screen-install .title-logo { width: min(520px, 82vw, 95vh); margin-top: 0; }
+body.gate .install-card { margin: 0; width: min(980px, 100%); }
+@media (orientation: portrait) {
+  body.gate .install-card { flex-direction: column; text-align: center; gap: 16px; padding: 22px 18px; }
+  body.gate .install-icon { width: 120px; height: 120px; border-radius: 28px; }
+  body.gate .install-body h2 { font-size: 26px; }
+  body.gate .install-body p { font-size: 16px; }
+  body.gate .install-help { font-size: 15px; }
+  body.gate #btn-install { font-size: 26px; padding: 14px 40px; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  body.gate .install-card { gap: 20px; padding: 14px 22px; }
+  body.gate .install-icon { width: 104px; height: 104px; border-radius: 24px; }
+  body.gate .install-body h2 { font-size: 24px; margin-bottom: 4px; }
+  body.gate .install-body p { font-size: 14px; margin-bottom: 10px; }
+  body.gate .install-help { font-size: 13px; margin-top: 8px; }
+  body.gate #btn-install { font-size: 22px; padding: 10px 34px; }
+}
+
 /* ---------- Video ---------- */
 #screen-video { background: #000; }
 #cinematic { width: 100%; height: 100%; object-fit: cover; background: #000; }
